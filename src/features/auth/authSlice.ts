@@ -4,7 +4,7 @@ import type { LogInResponse, DoctorWithoutPassword } from '@/types/types';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 interface AuthState {
-    loggedIn: boolean;
+    isLoggedIn: boolean;
     doctor: DoctorWithoutPassword | null;
     error: string | null;
     loading: boolean;
@@ -12,7 +12,7 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-    loggedIn: !!localStorage.getItem('token'),
+    isLoggedIn: !!localStorage.getItem('token'),
     doctor: null,
     error: null,
     loading: false,
@@ -28,7 +28,7 @@ export const logIn = createAsyncThunk(
         } catch (error: unknown) {
             let message = 'Login failed';
             if (isAxiosError(error)) {
-                message = error.response?.data?.message || error.message;
+                message = error.response?.data?.error || error.message;
             }
             return thunkAPI.rejectWithValue(message);
         }
@@ -40,7 +40,7 @@ const authSlice = createSlice({
     initialState,
     reducers: {
         logOut: (state) => {
-            state.loggedIn = false;
+            state.isLoggedIn = false;
             state.doctor = null;
             state.error = null;
             state.loading = false;
@@ -56,7 +56,7 @@ const authSlice = createSlice({
             })
             .addCase(logIn.fulfilled, (state, action) => {
                 state.loading = false;
-                state.loggedIn = true;
+                state.isLoggedIn = true;
                 state.doctor = action.payload.doctor;
                 state.error = null;
                 state.token = action.payload.token;

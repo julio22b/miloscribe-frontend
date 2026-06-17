@@ -1,12 +1,15 @@
 import { Route, Routes } from 'react-router';
 import ProtectedRoute from './components/ui/auth/ProtectedRoute';
+import { useAppState } from './app/hooks';
+import LogIn from './components/LogIn/LogIn';
 
 function App() {
-    const user = { isLoggedIn: true };
+    const { auth } = useAppState();
+
     return (
         <Routes>
-            <Route path='/login' element={<App />} />
-            <Route element={<ProtectedRoute isAuthenticated={user.isLoggedIn} />}>
+            <Route path='/login' element={<LogIn />} />
+            <Route element={<ProtectedRoute isAuthenticated={auth.isLoggedIn} />}>
                 <Route path='/patients' element={<div>patients</div>} />
                 <Route path='/patients/new' element={<div>patients create</div>} />
                 <Route path='/patients/consultation/new' element={<div>patients consultation</div>} />
