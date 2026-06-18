@@ -1,6 +1,9 @@
 import type { Patient } from '@/types/types';
 import { Card, CardContent } from '../ui/card';
 import { getAge, getAvatarColor, getLastVisitDate } from '@/lib/utils';
+import { ArrowRightIcon } from 'lucide-react';
+import { generatePath, Link } from 'react-router';
+import { ROUTES } from '@/routes';
 
 interface PatientCardProps {
     patient: Patient;
@@ -16,20 +19,26 @@ const PatientCard = ({ patient }: PatientCardProps) => {
 
     return (
         <Card className='shadow-md'>
-            <CardContent className='flex items-center gap-4'>
-                <div
-                    className={`w-13 h-13 rounded-full ${bg} ${text} font-bold text-center flex items-center justify-center`}
-                >
-                    {initials}
-                </div>
-                <div>
-                    <p>{patient.name}</p>
-                    <p className='text-sm text-muted-foreground'>
-                        {getAge(patient.date_of_birth)} years old - Last visit{' '}
-                        {patient.last_visit ? getLastVisitDate(patient.last_visit) : 'never'}
-                    </p>
-                </div>
-            </CardContent>
+            <Link
+                to={generatePath(ROUTES.CONSULTATION_NEW_EXISTING_PATIENT, { id: patient.id.toString() })}
+                state={{ patient }}
+            >
+                <CardContent className='flex items-center gap-4'>
+                    <div
+                        className={`w-13 h-13 rounded-full ${bg} ${text} font-bold text-center flex items-center justify-center`}
+                    >
+                        {initials}
+                    </div>
+                    <div>
+                        <p>{patient.name}</p>
+                        <p className='text-sm text-muted-foreground'>
+                            {getAge(patient.date_of_birth)} years old - Last visit{' '}
+                            {patient.last_visit ? getLastVisitDate(patient.last_visit) : 'never'}
+                        </p>
+                    </div>
+                    <ArrowRightIcon className='ml-auto text-muted-foreground' />
+                </CardContent>
+            </Link>
         </Card>
     );
 };

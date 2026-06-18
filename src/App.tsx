@@ -3,18 +3,20 @@ import ProtectedRoute from './components/ui/auth/ProtectedRoute';
 import { useAppState } from './app/hooks';
 import LogIn from './components/LogIn/LogIn';
 import Patients from './components/Patients/Patients';
+import { ROUTES } from './routes';
 
 function App() {
     const { auth } = useAppState();
 
     return (
         <Routes>
-            <Route path='/login' element={<LogIn />} />
+            <Route path={ROUTES.LOGIN} element={<LogIn />} />
             <Route element={<ProtectedRoute isAuthenticated={auth.isLoggedIn} />}>
-                <Route path='/patients' element={<Patients />} />
-                <Route path='/patients/new' element={<div>patients create</div>} />
-                <Route path='/patients/consultation/new' element={<div>patients consultation</div>} />
-                <Route path='/consultations/:id/document' element={<div>consultation document</div>} />
+                <Route path={ROUTES.PATIENTS} element={<Patients />} />
+                <Route path={ROUTES.PATIENTS_NEW} element={<div>patients create</div>} />
+                <Route path={ROUTES.CONSULTATION_NEW} element={<div>patients consultation</div>} />
+                <Route path={ROUTES.CONSULTATION_NEW_EXISTING_PATIENT} element={<div>with patient</div>} />
+                <Route path={ROUTES.CONSULTATION_DOCUMENT} element={<div>consultation document</div>} />
             </Route>
         </Routes>
     );

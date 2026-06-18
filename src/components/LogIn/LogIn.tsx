@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { logIn } from '@/features/auth/authSlice';
 import { Spinner } from '../ui/spinner';
+import { ROUTES } from '@/routes';
 
 const LogIn = () => {
     const [formState, setFormState] = useState({
@@ -21,7 +22,7 @@ const LogIn = () => {
         e.preventDefault();
         try {
             await dispatch(logIn(formState)).unwrap();
-            navigate('/patients');
+            navigate(ROUTES.PATIENTS);
         } catch {
             // error is handled in slice
         }

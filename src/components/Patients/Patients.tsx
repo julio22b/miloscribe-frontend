@@ -5,8 +5,9 @@ import { useEffect } from 'react';
 import { fetchPatients, setSearch } from '@/features/patients/patientsSlice';
 import { logOut } from '@/features/auth/authSlice';
 import PatientCard from './PatientCard';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Mic } from 'lucide-react';
+import { ROUTES } from '@/routes';
 
 const Patients = () => {
     const { patients, loading, error, search } = useAppSelector((state) => state.patients);
@@ -21,7 +22,7 @@ const Patients = () => {
 
     const handleLogout = () => {
         dispatch(logOut());
-        navigate('/login');
+        navigate(ROUTES.LOGIN);
     };
 
     return (
@@ -62,10 +63,12 @@ const Patients = () => {
                     </>
                 )}
             </div>
-            <Button className='rounded-full fixed bottom-4 right-4 p-5 flex items-center justify-between'>
-                <Mic />
-                Quick Record
-            </Button>
+            <Link to={ROUTES.CONSULTATION_NEW}>
+                <Button className='rounded-full fixed bottom-4 right-4 p-5 flex items-center justify-between'>
+                    <Mic />
+                    Quick Record
+                </Button>
+            </Link>
         </section>
     );
 };
