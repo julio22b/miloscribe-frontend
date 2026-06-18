@@ -7,6 +7,7 @@ export interface Patient {
     created_at: string;
     doctor: DoctorWithoutPassword;
     consultations: Consultation[];
+    last_visit?: string;
 }
 
 interface Doctor {

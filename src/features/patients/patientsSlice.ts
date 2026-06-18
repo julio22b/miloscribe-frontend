@@ -1,7 +1,7 @@
 import api from '@/api/axiosInstance';
 import { getErrorMessage } from '@/lib/utils';
 import type { Patient } from '@/types/types';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 interface PatientsStateInterface {
     patients: Patient[];
@@ -29,7 +29,11 @@ export const fetchPatients = createAsyncThunk('patients/fetchPatients', async (_
 export const patientsSlice = createSlice({
     name: 'patients',
     initialState,
-    reducers: {},
+    reducers: {
+        setSearch: (state, action: PayloadAction<string>) => {
+            state.search = action.payload;
+        },
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchPatients.pending, (state) => {
@@ -46,3 +50,7 @@ export const patientsSlice = createSlice({
             });
     },
 });
+
+export const { setSearch } = patientsSlice.actions;
+
+export default patientsSlice.reducer;

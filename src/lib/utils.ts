@@ -13,3 +13,36 @@ export function getErrorMessage(error: unknown) {
     }
     return message;
 }
+
+export function getAge(dateOfBirth: string): number {
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDifference = today.getMonth() - birthDate.getMonth();
+
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+
+    return age;
+}
+
+export const getAvatarColor = (id: number) => {
+    const colors = [
+        { bg: 'bg-teal-200', text: 'text-teal-800' },
+        { bg: 'bg-blue-200', text: 'text-blue-800' },
+        { bg: 'bg-purple-200', text: 'text-purple-800' },
+        { bg: 'bg-rose-200', text: 'text-rose-800' },
+        { bg: 'bg-amber-200', text: 'text-amber-800' },
+        { bg: 'bg-emerald-200', text: 'text-emerald-800' },
+    ];
+    return colors[id % colors.length];
+};
+
+export const getLastVisitDate = (lastVisit: string) => {
+    return new Intl.DateTimeFormat('en-US-', {
+        month: 'short',
+        day: 'numeric',
+    }).format(new Date(lastVisit));
+};
