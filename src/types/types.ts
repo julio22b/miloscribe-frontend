@@ -25,7 +25,7 @@ export type DoctorWithoutPassword = Omit<Doctor, 'password'>;
 
 type ConsultationStatuses = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
-type DocumentType = 'MEDICAL_HISTORY' | 'PROGRESS_NOTE' | 'DISCHARGE_SUMMARY' | 'FOLLOW_UP_PLAN';
+export type DocumentType = 'MEDICAL_HISTORY' | 'PROGRESS_NOTE' | 'DISCHARGE_SUMMARY' | 'FOLLOW_UP_PLAN';
 
 interface Document {
     id: number;
