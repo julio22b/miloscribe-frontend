@@ -17,6 +17,11 @@ const RecordingSession = () => {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
+    const audioBlobRef = useRef<Blob | null>(null);
     const isRecording = recordingStatus === RECORDING_STATUSES.recording;
 
     useEffect(() => {
@@ -40,6 +45,47 @@ const RecordingSession = () => {
         setTimer(0);
     };
 
+    const startDrawLoop = () => {
+        if (!analyserRef.current) return;
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const draw = () => {
+            animationFrameRef.current = requestAnimationFrame(draw);
+            analyserRef.current!.getByteFrequencyData(dataArray);
+
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = (canvas.width / bufferLength) * 0.8;
+            let x = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (dataArray[i] / 255) * canvas.height;
+                ctx.fillStyle = '#2563eb';
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 2;
+            }
+        };
+        draw();
+    };
+
+    const drawWaveform = (stream: MediaStream) => {
+        audioContextRef.current = new AudioContext();
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+
+        startDrawLoop();
+    };
+
     const startRecording = (stream: MediaStream) => {
         mediaRecorderRef.current = new MediaRecorder(stream);
         mediaRecorderRef.current.ondataavailable = (ev) => {
@@ -50,12 +96,12 @@ const RecordingSession = () => {
 
         mediaRecorderRef.current.onstop = () => {
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            console.log(audioUrl);
+            audioBlobRef.current = audioBlob;
         };
 
         mediaRecorderRef.current.start();
         setRecordingStatus(RECORDING_STATUSES.recording);
+        drawWaveform(stream);
         console.log('recoding started');
     };
 
@@ -82,12 +128,14 @@ const RecordingSession = () => {
         mediaRecorderRef.current?.pause();
         pauseTimer();
         setRecordingStatus(RECORDING_STATUSES.paused);
+        cancelAnimationFrame(animationFrameRef.current!);
         console.log('recording paused');
     };
 
     const resumeRecording = () => {
         mediaRecorderRef.current?.resume();
         setRecordingStatus(RECORDING_STATUSES.recording);
+        startDrawLoop();
         console.log('recording resumed');
     };
 
@@ -95,6 +143,10 @@ const RecordingSession = () => {
         mediaRecorderRef.current?.stop();
         stopTimer();
         setRecordingStatus(RECORDING_STATUSES.done);
+        cancelAnimationFrame(animationFrameRef.current!);
+        canvasRef.current
+            ?.getContext('2d')
+            ?.clearRect(0, 0, canvasRef.current?.width ?? 0, canvasRef.current?.height ?? 0);
         console.log('recording stopped');
     };
 
@@ -124,7 +176,7 @@ const RecordingSession = () => {
                     </ToggleGroupItem>
                 ))}
             </ToggleGroup>
-            <canvas className='w-full h-80 border-2 my-6'></canvas>
+            <canvas ref={canvasRef} className='w-full h-80 border-2 my-6'></canvas>
             <p className='font-bold text-3xl text-center'>{formatTime(timer)}</p>
             {isRecording ? (
                 <p className='font-semibold text-green-600 text-center'>Capturing active</p>
@@ -147,7 +199,7 @@ const RecordingSession = () => {
                         return requestMicPermission();
                     }}
                 >
-                    {isRecording ? <Square className='size-12' /> : <Mic className='size-12' />}
+                    {isRecording ? <Square className='size-12 fill-white' /> : <Mic className='size-12' />}
                 </Button>
                 <Button
                     className='size-14 bg-white rounded-full shadow-2xl'
