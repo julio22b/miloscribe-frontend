@@ -41,7 +41,7 @@ export const getAvatarColor = (id: number) => {
 };
 
 export const getLastVisitDate = (lastVisit: string) => {
-    return new Intl.DateTimeFormat('en-US-', {
+    return new Intl.DateTimeFormat('en-US', {
         month: 'short',
         day: 'numeric',
     }).format(new Date(lastVisit));

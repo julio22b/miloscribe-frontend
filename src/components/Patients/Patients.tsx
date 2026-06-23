@@ -35,12 +35,17 @@ const Patients = () => {
             </header>
 
             <div className='flex flex-col gap-4'>
-                <Input
-                    type='search'
-                    placeholder='Search patient'
-                    value={search}
-                    onChange={(e) => dispatch(setSearch(e.target.value))}
-                />
+                <div className='flex items-center gap-4'>
+                    <Input
+                        type='search'
+                        placeholder='Search patient'
+                        value={search}
+                        onChange={(e) => dispatch(setSearch(e.target.value))}
+                    />
+                    <Link to={ROUTES.PATIENTS_NEW}>
+                        <Button>Add patient</Button>
+                    </Link>
+                </div>
 
                 {loading && <p className='text-center text-gray-600'>Loading patients...</p>}
 

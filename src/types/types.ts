@@ -10,6 +10,8 @@ export interface Patient {
     last_visit?: string;
 }
 
+export type CreatePatientFormState = Pick<Patient, 'name' | 'date_of_birth' | 'gender'>;
+
 interface Doctor {
     id: number;
     name: string;
@@ -37,7 +39,7 @@ interface Document {
     updated_at: string;
 }
 
-interface Consultation {
+export interface Consultation {
     id: number;
     patient_id: number;
     patient: Patient;
@@ -48,6 +50,11 @@ interface Consultation {
     documents: Document[];
 }
 
+export interface CreateConsultationPayload {
+    patient_id: number;
+    audio: Blob;
+    document_type: DocumentType;
+}
 export interface LogInResponse {
     token: string;
     message: string;

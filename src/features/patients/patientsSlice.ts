@@ -1,7 +1,7 @@
 import api from '@/api/axiosInstance';
 import { getErrorMessage } from '@/lib/utils';
-import type { Patient } from '@/types/types';
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { CreatePatientFormState, Patient } from '@/types/types';
+import { createAsyncThunk, createSlice, isAnyOf, type PayloadAction } from '@reduxjs/toolkit';
 
 interface PatientsStateInterface {
     patients: Patient[];
@@ -26,6 +26,18 @@ export const fetchPatients = createAsyncThunk('patients/fetchPatients', async (_
     }
 });
 
+export const createPatient = createAsyncThunk(
+    'patients/createPatient',
+    async (payload: CreatePatientFormState, thunkApi) => {
+        try {
+            const data = (await api.post<{ patient: Patient }>('/patients', payload)).data;
+            return data;
+        } catch (error) {
+            return thunkApi.rejectWithValue(getErrorMessage(error));
+        }
+    },
+);
+
 export const patientsSlice = createSlice({
     name: 'patients',
     initialState,
@@ -36,15 +48,19 @@ export const patientsSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchPatients.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
             .addCase(fetchPatients.fulfilled, (state, action) => {
                 state.loading = false;
                 state.patients = action.payload.patients;
             })
-            .addCase(fetchPatients.rejected, (state, action) => {
+            .addCase(createPatient.fulfilled, (state, action) => {
+                state.loading = false;
+                state.patients = [action.payload.patient, ...state.patients];
+            })
+            .addMatcher(isAnyOf(fetchPatients.pending, createPatient.pending), (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addMatcher(isAnyOf(fetchPatients.rejected, createPatient.rejected), (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });
