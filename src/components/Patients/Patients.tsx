@@ -6,7 +6,7 @@ import { fetchPatients, setSearch } from '@/features/patients/patientsSlice';
 import { logOut } from '@/features/auth/authSlice';
 import PatientCard from './PatientCard';
 import { Link, useNavigate } from 'react-router';
-import { Mic } from 'lucide-react';
+import { LogOutIcon, Mic, Plus } from 'lucide-react';
 import { ROUTES } from '@/routes';
 
 const Patients = () => {
@@ -29,11 +29,11 @@ const Patients = () => {
         <section className='p-4 border flex flex-col gap-5'>
             <header className='flex items-center justify-between'>
                 <h1 className='text-xl font-bold'>Select patient</h1>
-                <Button variant='outline' onClick={handleLogout}>
+                <Button variant='outline' onClick={handleLogout} size='sm'>
+                    <LogOutIcon />
                     Log out
                 </Button>
             </header>
-
             <div className='flex flex-col gap-4'>
                 <div className='flex items-center gap-4'>
                     <Input
@@ -43,7 +43,9 @@ const Patients = () => {
                         onChange={(e) => dispatch(setSearch(e.target.value))}
                     />
                     <Link to={ROUTES.PATIENTS_NEW}>
-                        <Button>Add patient</Button>
+                        <Button size='lg'>
+                            <Plus /> Add
+                        </Button>
                     </Link>
                 </div>
 
@@ -59,7 +61,14 @@ const Patients = () => {
 
                 {!loading && !error && patients.length > 0 && (
                     <>
-                        <h2 className='text-sm font-semibold text-gray-700 tracking-wider'>Recent appointments</h2>
+                        <h2 className='text-sm font-semibold text-gray-700 tracking-wider flex justify-between'>
+                            Recent appointments{' '}
+                            {patients.length && (
+                                <span className='text-sm text-gray-500'>
+                                    {patients.length} patient{patients.length > 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </h2>
                         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                             {filteredPatients.map((patient) => (
                                 <PatientCard key={patient.id} patient={patient} />

@@ -32,7 +32,7 @@ const PatientCard = ({ patient }: PatientCardProps) => {
                     <div>
                         <p>{patient.name}</p>
                         <p className='text-sm text-muted-foreground'>
-                            {getAge(patient.date_of_birth)} years old - Last visit{' '}
+                            {getAge(patient.date_of_birth)}y &middot; Last visit{' '}
                             {patient.last_visit ? getLastVisitDate(patient.last_visit) : 'never'}
                         </p>
                     </div>
