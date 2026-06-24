@@ -24,6 +24,8 @@ api.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${token}`;
     }
 
+    if (config?.url?.includes('consultations')) return config;
+
     config._wakeupTimer = setTimeout(() => {
         toast.loading('Server is waking up…', {
             id: WAKEUP_TOAST_ID,
