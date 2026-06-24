@@ -1,17 +1,22 @@
-import { ArrowLeft, Bookmark, InfoIcon, Mic, Pause, Square } from 'lucide-react';
+import { ArrowUp, InfoIcon, Mic, Pause, Trash } from 'lucide-react';
 import { Button } from '../ui/button';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 import type { DocumentType, Patient, RecordingStatus } from '@/types/types';
 import { useEffect, useRef, useState } from 'react';
 import { DOCUMENT_TYPES, RECORDING_STATUSES } from '@/app/constants';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-import { formatTime } from '@/lib/utils';
+import { formatTime, getAge } from '@/lib/utils';
+import { createConsultation } from '@/features/consultations/consultationsSlice';
+import { useAppDispatch } from '@/app/hooks';
+import GoBackBtn from '../common/GoBackBtn';
+import PatientInitials from '../common/PatientInitials';
+import { toast } from 'sonner';
 
 const RecordingSession = () => {
     const [documentType, setDocumentType] = useState<DocumentType>(DOCUMENT_TYPES.MEDICAL_HISTORY.value);
     const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>(RECORDING_STATUSES.idle);
     const [timer, setTimer] = useState<number>(0);
-    const navigate = useNavigate();
+    const [hasRecording, setHasRecording] = useState(false);
     const location = useLocation();
     const patient = location.state.patient as Patient | null;
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -22,7 +27,10 @@ const RecordingSession = () => {
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const audioBlobRef = useRef<Blob | null>(null);
+    const dispatch = useAppDispatch();
     const isRecording = recordingStatus === RECORDING_STATUSES.recording;
+    const isPaused = recordingStatus === RECORDING_STATUSES.paused;
+    const isIdle = recordingStatus === RECORDING_STATUSES.idle;
 
     useEffect(() => {
         if (recordingStatus === RECORDING_STATUSES.recording) {
@@ -59,17 +67,37 @@ const RecordingSession = () => {
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const dpr = window.devicePixelRatio || 1;
+            const cssWidth = canvas.clientWidth;
+            const cssHeight = canvas.clientHeight;
+            canvas.width = cssWidth * dpr;
+            canvas.height = cssHeight * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, cssWidth, cssHeight);
 
-            const barWidth = (canvas.width / bufferLength) * 0.8;
-            let x = 0;
-            for (let i = 0; i < bufferLength; i++) {
-                const barHeight = (dataArray[i] / 255) * canvas.height;
-                ctx.fillStyle = '#2563eb';
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 2;
+            const barCount = 55;
+            const barWidth = 6;
+            const gap = 5;
+            const totalWidth = barCount * (barWidth + gap) - gap;
+            const startX = (cssWidth - totalWidth) / 2;
+            const centerY = cssHeight / 2;
+            const maxBarHalfHeight = cssHeight * 0.42;
+            const minBarHalfHeight = 3;
+            const step = Math.floor(bufferLength / barCount);
+            const radius = barWidth / 2;
+
+            ctx.fillStyle = '#2563eb';
+
+            for (let i = 0; i < barCount; i++) {
+                const value = dataArray[i * step] / 255;
+                const halfHeight = Math.max(minBarHalfHeight, value * maxBarHalfHeight);
+                const x = startX + i * (barWidth + gap);
+                const y = centerY - halfHeight;
+                const height = halfHeight * 2;
+
+                ctx.beginPath();
+                ctx.roundRect(x, y, barWidth, height, radius);
+                ctx.fill();
             }
         };
         draw();
@@ -97,12 +125,13 @@ const RecordingSession = () => {
         mediaRecorderRef.current.onstop = () => {
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
             audioBlobRef.current = audioBlob;
+            setHasRecording(true);
+            dispatchConsultation(audioBlob);
         };
 
         mediaRecorderRef.current.start();
         setRecordingStatus(RECORDING_STATUSES.recording);
         drawWaveform(stream);
-        console.log('recoding started');
     };
 
     const requestMicPermission = async () => {
@@ -112,14 +141,14 @@ const RecordingSession = () => {
         } catch (error) {
             if (error instanceof DOMException) {
                 if (error.name === 'NotAllowedError') {
-                    console.log(error, 'User or system denied mic access');
+                    toast.error('User or system denied mic access');
                 } else if (error.name === 'NotFoundError') {
-                    console.log(error, 'No microphone found');
+                    toast.error('No microphone found');
                 } else {
-                    console.log(`Media error: ${error.name} - ${error.message}`);
+                    toast.error(`Media error: ${error.name} - ${error.message}`);
                 }
             } else {
-                console.log('Unknown error:', error);
+                toast.error(`Unknown error: ${error}`);
             }
         }
     };
@@ -128,15 +157,14 @@ const RecordingSession = () => {
         mediaRecorderRef.current?.pause();
         pauseTimer();
         setRecordingStatus(RECORDING_STATUSES.paused);
+        setHasRecording(true);
         cancelAnimationFrame(animationFrameRef.current!);
-        console.log('recording paused');
     };
 
     const resumeRecording = () => {
         mediaRecorderRef.current?.resume();
         setRecordingStatus(RECORDING_STATUSES.recording);
         startDrawLoop();
-        console.log('recording resumed');
     };
 
     const stopRecording = () => {
@@ -147,19 +175,42 @@ const RecordingSession = () => {
         canvasRef.current
             ?.getContext('2d')
             ?.clearRect(0, 0, canvasRef.current?.width ?? 0, canvasRef.current?.height ?? 0);
-        console.log('recording stopped');
+    };
+
+    const dispatchConsultation = (blob: Blob) => {
+        if (!patient) return;
+        const formData = new FormData();
+        formData.append('patientId', patient.id!.toString());
+        formData.append('audioFile', blob, 'consultation.webm');
+        dispatch(createConsultation(formData));
+    };
+
+    const onSubmit = () => {
+        if (!patient) return;
+        stopRecording();
+    };
+
+    const discardRecording = () => {
+        audioBlobRef.current = null;
+        audioChunksRef.current = [];
+        setHasRecording(false);
+        setRecordingStatus(RECORDING_STATUSES.idle);
+        setTimer(0);
+        const canvas = canvasRef.current;
+        if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     };
 
     return (
         <section className='flex flex-col p-4 gap-6'>
             <header className='flex items-center justify-between'>
-                <Button variant='outline' size='icon' className='rounded-full' onClick={() => navigate(-1)}>
-                    <ArrowLeft />
-                </Button>
-                <div>
-                    <h1 className='text-sm tracking-wider text-center text-muted-foreground'>Recording Session</h1>
-                    <p className='font-bold text-center'>{patient && patient.name}</p>
-                </div>
+                <GoBackBtn />
+                {patient && (
+                    <div className='flex items-baseline gap-2'>
+                        <PatientInitials patient={patient} className='size-8 text-sm' />
+                        <p className='font-bold text-center'>{patient && patient.name}</p>
+                        <p className='text-sm text-muted-foreground'>{getAge(patient.date_of_birth)}y</p>
+                    </div>
+                )}
                 <InfoIcon />
             </header>
             <ToggleGroup
@@ -176,37 +227,77 @@ const RecordingSession = () => {
                     </ToggleGroupItem>
                 ))}
             </ToggleGroup>
-            <canvas ref={canvasRef} className='w-full h-80 border-2 my-6'></canvas>
-            <p className='font-bold text-3xl text-center'>{formatTime(timer)}</p>
+            <div className='relative my-1'>
+                <canvas ref={canvasRef} className='w-full h-60 border bg-white rounded-lg'></canvas>
+                {!isRecording && !isPaused && (
+                    <div className='absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground'>
+                        <Mic className='size-10 opacity-20' />
+                        <p className='text-black font-medium'>Ready when you are</p>
+                        <p className='text-sm w-70 text-center'>
+                            Tap the microphone to capture the visit. When you’re done, send the audio and we’ll draft
+                            the document for you.
+                        </p>
+                    </div>
+                )}
+            </div>
             {isRecording ? (
-                <p className='font-semibold text-green-600 text-center'>Capturing active</p>
+                <div className='flex items-center gap-2 self-center'>
+                    <div className='rounded-full size-2 bg-green-600 animate-pulse'></div>
+                    <p className='font-semibold text-green-600 text-center'>Recording active</p>
+                </div>
             ) : (
-                <p className='font-semibold text-gray-500 text-center'>Not capturing</p>
+                <div className='flex items-center gap-2 self-center'>
+                    <div className='rounded-full size-2 bg-gray-500'></div>
+                    <p className='font-semibold text-gray-500 text-center'>Not recording</p>
+                </div>
             )}
+            <p className={`font-bold text-3xl text-center ${isRecording ? 'text-black' : 'text-muted-foreground'}`}>
+                {formatTime(timer)}
+            </p>
             <div className='flex justify-around items-center'>
-                <Button
-                    className='size-14 bg-white rounded-full shadow-2xl'
-                    onClick={pauseRecording}
-                    disabled={!isRecording}
-                >
-                    <Pause className='size-7 fill-black text-black' />
-                </Button>
-                <Button
-                    className={`size-24 rounded-full bg-gray-500 shadow-2xl ${isRecording ? 'bg-blue-500 animate-pulse' : ''}`}
-                    onClick={() => {
-                        if (recordingStatus === RECORDING_STATUSES.recording) return stopRecording();
-                        if (recordingStatus === RECORDING_STATUSES.paused) return resumeRecording();
-                        return requestMicPermission();
-                    }}
-                >
-                    {isRecording ? <Square className='size-12 fill-white' /> : <Mic className='size-12' />}
-                </Button>
-                <Button
-                    className='size-14 bg-white rounded-full shadow-2xl'
-                    disabled={recordingStatus === RECORDING_STATUSES.idle}
-                >
-                    <Bookmark className='size-7 fill-black text-black' />
-                </Button>
+                {!isIdle && (
+                    <div>
+                        <Button
+                            className='size-14 bg-white rounded-full shadow-md shadow-gray-200 border-gray-200'
+                            disabled={isRecording || !hasRecording}
+                            onClick={discardRecording}
+                        >
+                            <Trash className='size-7 text-red-500' />
+                        </Button>
+                        <p className='text-sm text-gray-500 text-center mt-2'>Discard</p>
+                    </div>
+                )}
+                <div>
+                    <Button
+                        className={`size-24 rounded-full ${!isRecording ? 'bg-blue-500 shadow-blue-400 shadow-md' : 'bg-white shadow-md shadow-gray-200'}`}
+                        onClick={() => {
+                            if (isRecording) return pauseRecording();
+                            if (isPaused) return resumeRecording();
+                            return requestMicPermission();
+                        }}
+                    >
+                        {isRecording ? (
+                            <Pause className='size-10 text-black fill-black' />
+                        ) : (
+                            <Mic className='size-10' />
+                        )}
+                    </Button>
+                    <p className='text-sm text-gray-500 text-center mt-2'>
+                        {isRecording ? 'Pause' : 'Start recording'}
+                    </p>
+                </div>
+                {!isIdle && (
+                    <div>
+                        <Button
+                            className='size-14 bg-green-600 rounded-full shadow-md shadow-green-400 text-white text-xs font-semibold border-gray-200'
+                            disabled={!isPaused}
+                            onClick={onSubmit}
+                        >
+                            <ArrowUp className='size-7' />
+                        </Button>
+                        <p className='text-sm text-gray-500 text-center mt-2'>Send</p>
+                    </div>
+                )}
             </div>
         </section>
     );
