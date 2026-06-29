@@ -55,3 +55,5 @@ export const formatTime = (seconds: number) => {
 
     return `${minutes}:${secondsLefts}`;
 };
+
+export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

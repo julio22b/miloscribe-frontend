@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { toast } from 'sonner';
+import { ROUTES } from '@/routes';
 
 declare module 'axios' {
     interface InternalAxiosRequestConfig {
@@ -46,6 +47,12 @@ api.interceptors.response.use(
     (error) => {
         clearTimeout(error.config?._wakeupTimer);
         toast.dismiss(WAKEUP_TOAST_ID);
+
+        if (error.response?.status === 401 && !error.config?.url?.includes('/auth')) {
+            localStorage.removeItem('token');
+            window.location.replace(ROUTES.LOGIN);
+        }
+
         return Promise.reject(error);
     },
 );

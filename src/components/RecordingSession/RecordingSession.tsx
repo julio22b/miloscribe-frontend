@@ -1,23 +1,28 @@
 import { ArrowUp, InfoIcon, Mic, Pause, Trash } from 'lucide-react';
 import { Button } from '../ui/button';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import type { DocumentType, Patient, RecordingStatus } from '@/types/types';
 import { useEffect, useRef, useState } from 'react';
 import { DOCUMENT_TYPES, RECORDING_STATUSES } from '@/app/constants';
+import { ROUTES } from '@/routes';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-import { formatTime, getAge } from '@/lib/utils';
-import { createConsultation } from '@/features/consultations/consultationsSlice';
+import { delay, formatTime, getAge } from '@/lib/utils';
+import { createConsultation, processConsultation } from '@/features/consultations/consultationsSlice';
 import { useAppDispatch } from '@/app/hooks';
 import GoBackBtn from '../common/GoBackBtn';
 import PatientInitials from '../common/PatientInitials';
 import { toast } from 'sonner';
+import ProcessingRecording from './ProcessingRecording';
 
 const RecordingSession = () => {
     const [documentType, setDocumentType] = useState<DocumentType>(DOCUMENT_TYPES.MEDICAL_HISTORY.value);
     const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>(RECORDING_STATUSES.idle);
     const [timer, setTimer] = useState<number>(0);
     const [hasRecording, setHasRecording] = useState(false);
+    const [isConsultationCreated, setIsConsultationCreated] = useState(false);
+    const [isConsultationProcessed, setIsConsultationProcessed] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
     const patient = location.state.patient as Patient | null;
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -27,10 +32,14 @@ const RecordingSession = () => {
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const audioBlobRef = useRef<Blob | null>(null);
+    const consultationIdRef = useRef<number | null>(null);
     const dispatch = useAppDispatch();
     const isRecording = recordingStatus === RECORDING_STATUSES.recording;
     const isPaused = recordingStatus === RECORDING_STATUSES.paused;
     const isIdle = recordingStatus === RECORDING_STATUSES.idle;
+    const isProcessing = recordingStatus === RECORDING_STATUSES.processing;
+    const isDone = recordingStatus === RECORDING_STATUSES.done;
+    const time = formatTime(timer);
 
     useEffect(() => {
         if (recordingStatus === RECORDING_STATUSES.recording) {
@@ -170,19 +179,34 @@ const RecordingSession = () => {
     const stopRecording = () => {
         mediaRecorderRef.current?.stop();
         stopTimer();
-        setRecordingStatus(RECORDING_STATUSES.done);
+        setRecordingStatus(RECORDING_STATUSES.processing);
         cancelAnimationFrame(animationFrameRef.current!);
         canvasRef.current
             ?.getContext('2d')
             ?.clearRect(0, 0, canvasRef.current?.width ?? 0, canvasRef.current?.height ?? 0);
     };
 
-    const dispatchConsultation = (blob: Blob) => {
+    useEffect(() => {
+        if (isDone && consultationIdRef.current !== null) {
+            navigate(ROUTES.CONSULTATION_REVIEW.replace(':id', String(consultationIdRef.current)));
+        }
+    }, [isDone, navigate]);
+
+    const dispatchConsultation = async (blob: Blob) => {
         if (!patient) return;
         const formData = new FormData();
         formData.append('patientId', patient.id!.toString());
         formData.append('audioFile', blob, 'consultation.webm');
-        dispatch(createConsultation(formData));
+        try {
+            const consultation = await dispatch(createConsultation(formData)).unwrap();
+            consultationIdRef.current = consultation.id;
+            setIsConsultationCreated(true);
+            await dispatch(processConsultation({ consultationID: consultation.id, documentType })).unwrap();
+            setIsConsultationProcessed(true);
+            delay(2000).then(() => setRecordingStatus(RECORDING_STATUSES.done));
+        } catch (error) {
+            console.log('error', error);
+        }
     };
 
     const onSubmit = () => {
@@ -201,7 +225,7 @@ const RecordingSession = () => {
     };
 
     return (
-        <section className='flex flex-col p-4 gap-6'>
+        <section className='flex flex-col p-4 gap-4'>
             <header className='flex items-center justify-between'>
                 <GoBackBtn />
                 {patient && (
@@ -228,8 +252,8 @@ const RecordingSession = () => {
                 ))}
             </ToggleGroup>
             <div className='relative my-1'>
-                <canvas ref={canvasRef} className='w-full h-60 border bg-white rounded-lg'></canvas>
-                {!isRecording && !isPaused && (
+                <canvas ref={canvasRef} className='w-full h-70 border bg-white rounded-lg'></canvas>
+                {!isRecording && !isPaused && !isProcessing && (
                     <div className='absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground'>
                         <Mic className='size-10 opacity-20' />
                         <p className='text-black font-medium'>Ready when you are</p>
@@ -239,23 +263,36 @@ const RecordingSession = () => {
                         </p>
                     </div>
                 )}
+                {(isProcessing || isConsultationProcessed) && (
+                    <ProcessingRecording
+                        documentType={documentType}
+                        isConsultationCreated={isConsultationCreated}
+                        isConsultationProcessed={isConsultationProcessed}
+                        time={time}
+                    />
+                )}
             </div>
-            {isRecording ? (
-                <div className='flex items-center gap-2 self-center'>
-                    <div className='rounded-full size-2 bg-green-600 animate-pulse'></div>
-                    <p className='font-semibold text-green-600 text-center'>Recording active</p>
-                </div>
-            ) : (
-                <div className='flex items-center gap-2 self-center'>
-                    <div className='rounded-full size-2 bg-gray-500'></div>
-                    <p className='font-semibold text-gray-500 text-center'>Not recording</p>
-                </div>
+            {!isProcessing &&
+                (isRecording ? (
+                    <div className='flex items-center gap-2 self-center'>
+                        <div className='rounded-full size-2 bg-green-600 animate-pulse'></div>
+                        <p className='font-semibold text-green-600 text-center'>Recording active</p>
+                    </div>
+                ) : (
+                    <div className='flex items-center gap-2 self-center'>
+                        <div className='rounded-full size-2 bg-gray-500'></div>
+                        <p className='font-semibold text-gray-500 text-center'>Not recording</p>
+                    </div>
+                ))}
+            {!isProcessing && (
+                <p
+                    className={`font-bold text-3xl -mt-4 text-center ${isRecording ? 'text-black' : 'text-muted-foreground'}`}
+                >
+                    {time}
+                </p>
             )}
-            <p className={`font-bold text-3xl text-center ${isRecording ? 'text-black' : 'text-muted-foreground'}`}>
-                {formatTime(timer)}
-            </p>
             <div className='flex justify-around items-center'>
-                {!isIdle && (
+                {!isIdle && !isProcessing && (
                     <div>
                         <Button
                             className='size-14 bg-white rounded-full shadow-md shadow-gray-200 border-gray-200'
@@ -267,26 +304,28 @@ const RecordingSession = () => {
                         <p className='text-sm text-gray-500 text-center mt-2'>Discard</p>
                     </div>
                 )}
-                <div>
-                    <Button
-                        className={`size-24 rounded-full ${!isRecording ? 'bg-blue-500 shadow-blue-400 shadow-md' : 'bg-white shadow-md shadow-gray-200'}`}
-                        onClick={() => {
-                            if (isRecording) return pauseRecording();
-                            if (isPaused) return resumeRecording();
-                            return requestMicPermission();
-                        }}
-                    >
-                        {isRecording ? (
-                            <Pause className='size-10 text-black fill-black' />
-                        ) : (
-                            <Mic className='size-10' />
-                        )}
-                    </Button>
-                    <p className='text-sm text-gray-500 text-center mt-2'>
-                        {isRecording ? 'Pause' : 'Start recording'}
-                    </p>
-                </div>
-                {!isIdle && (
+                {!isProcessing && (
+                    <div>
+                        <Button
+                            className={`size-24 rounded-full ${!isRecording ? 'bg-blue-500 shadow-blue-400 shadow-md' : 'bg-white shadow-md shadow-gray-200'}`}
+                            onClick={() => {
+                                if (isRecording) return pauseRecording();
+                                if (isPaused) return resumeRecording();
+                                return requestMicPermission();
+                            }}
+                        >
+                            {isRecording ? (
+                                <Pause className='size-10 text-black fill-black' />
+                            ) : (
+                                <Mic className='size-10' />
+                            )}
+                        </Button>
+                        <p className='text-sm text-gray-500 text-center mt-2'>
+                            {isRecording ? 'Pause' : 'Start recording'}
+                        </p>
+                    </div>
+                )}
+                {!isIdle && !isProcessing && (
                     <div>
                         <Button
                             className='size-14 bg-green-600 rounded-full shadow-md shadow-green-400 text-white text-xs font-semibold border-gray-200'

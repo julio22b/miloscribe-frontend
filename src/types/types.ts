@@ -27,7 +27,7 @@ export type DoctorWithoutPassword = Omit<Doctor, 'password'>;
 
 type ConsultationStatuses = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
-export type DocumentType = 'MEDICAL_HISTORY' | 'PROGRESS_NOTE' | 'DISCHARGE_SUMMARY' | 'FOLLOW_UP_PLAN';
+export type DocumentType = 'MEDICAL_HISTORY' | 'PROGRESS_NOTE' | 'DISCHARGE_SUMMARY';
 
 interface Document {
     id: number;
@@ -61,4 +61,4 @@ export interface LogInResponse {
     doctor: DoctorWithoutPassword;
 }
 
-export type RecordingStatus = 'idle' | 'recording' | 'paused' | 'processing' | 'done';
+export type RecordingStatus = 'idle' | 'recording' | 'paused' | 'processing' | 'consultation_created' | 'done';
