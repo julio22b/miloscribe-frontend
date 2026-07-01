@@ -9,13 +9,22 @@ import ReviewConsultation from './components/ReviewConsultation/ReviewConsultati
 import PatientForm from './components/Patients/PatientForm';
 import { Toaster } from 'sonner';
 import { CircleCheck } from 'lucide-react';
+import FullPageLoader from './components/common/FullPageLoader';
+import { useEffect, useState } from 'react';
+import { subscribeServerWakeup } from './lib/serverWakeup';
 
 function App() {
     const { auth } = useAppState();
+    const [serverWakingUp, setServerWakingUp] = useState(false);
+
+    useEffect(() => subscribeServerWakeup(setServerWakingUp), []);
 
     return (
         <div className='flex flex-col bg-accent min-h-screen'>
             <Toaster icons={{ success: <CircleCheck className='text-green-500' /> }} />
+            {serverWakingUp && (
+                <FullPageLoader message='Server is waking up…' description='This may take a few seconds.' />
+            )}
             <Routes>
                 <Route path='/' element={<Navigate to={auth.isLoggedIn ? ROUTES.PATIENTS : ROUTES.LOGIN} replace />} />
                 <Route path={ROUTES.LOGIN} element={<LogIn />} />

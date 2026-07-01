@@ -11,8 +11,8 @@ import { ArrowRight, Eye, EyeOff, Mic } from 'lucide-react';
 
 const LogIn = () => {
     const [formState, setFormState] = useState({
-        username: '',
-        password: '',
+        username: 'test',
+        password: 'test',
     });
     const [showPassword, setShowPassword] = useState(false);
     const { loading, error } = useAppSelector((state) => state.auth);
