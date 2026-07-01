@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { toast } from 'sonner';
+import { setServerWakingUp } from '@/lib/serverWakeup';
 import { ROUTES } from '@/routes';
 
 declare module 'axios' {
@@ -8,7 +8,6 @@ declare module 'axios' {
     }
 }
 
-const WAKEUP_TOAST_ID = 'server-wakeup';
 const WAKEUP_THRESHOLD_MS = 3000;
 let isRedirectingToLogin = false;
 
@@ -29,11 +28,7 @@ api.interceptors.request.use((config) => {
     if (config?.url?.includes('consultations') || config?.url?.includes('documents')) return config;
 
     config._wakeupTimer = setTimeout(() => {
-        toast.loading('Server is waking up…', {
-            id: WAKEUP_TOAST_ID,
-            description: 'This may take a few seconds.',
-            duration: Infinity,
-        });
+        setServerWakingUp(true);
     }, WAKEUP_THRESHOLD_MS);
 
     return config;
@@ -42,12 +37,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => {
         clearTimeout(response.config._wakeupTimer);
-        toast.dismiss(WAKEUP_TOAST_ID);
+        setServerWakingUp(false);
         return response;
     },
     (error) => {
         clearTimeout(error.config?._wakeupTimer);
-        toast.dismiss(WAKEUP_TOAST_ID);
+        setServerWakingUp(false);
 
         if (error.response?.status === 401 && !error.config?.url?.includes('/auth') && !isRedirectingToLogin) {
             isRedirectingToLogin = true;
