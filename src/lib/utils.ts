@@ -14,7 +14,7 @@ export function getErrorMessage(error: unknown) {
     return message;
 }
 
-export function getAge(dateOfBirth: string): number {
+export function getAgeFromDOB(dateOfBirth: string): number {
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
 
@@ -26,6 +26,10 @@ export function getAge(dateOfBirth: string): number {
     }
 
     return age;
+}
+
+export function getDOBFromAge(age: number): string {
+    return `${new Date().getFullYear() - age}-01-01`;
 }
 
 export const getAvatarColor = (id: number) => {

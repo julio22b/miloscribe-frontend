@@ -1,4 +1,4 @@
-import { getAge } from '@/lib/utils';
+import { getAgeFromDOB } from '@/lib/utils';
 import { Home } from 'lucide-react';
 import GoBackBtn from './GoBackBtn';
 import PatientInitials from './PatientInitials';
@@ -21,7 +21,7 @@ const PatientHeader = ({ patient }: PatientHeaderInterface) => {
                 <div className='flex items-baseline gap-2'>
                     <PatientInitials patient={patient} className='size-8 text-sm' />
                     <p className='font-bold text-center'>{patient && patient.name}</p>
-                    <p className='text-sm text-muted-foreground'>{getAge(patient.date_of_birth)}y</p>
+                    <p className='text-sm text-muted-foreground'>{getAgeFromDOB(patient.date_of_birth)}y</p>
                 </div>
             )}
             <Button variant='outline' size='icon' className='rounded-full' onClick={() => navigate(ROUTES.PATIENTS)}>

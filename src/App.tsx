@@ -31,7 +31,7 @@ function App() {
                 <Route element={<ProtectedRoute isAuthenticated={auth.isLoggedIn} />}>
                     <Route path={ROUTES.PATIENTS} element={<Patients />} />
                     <Route path={ROUTES.PATIENTS_NEW} element={<PatientForm />} />
-                    <Route path={ROUTES.CONSULTATION_NEW} element={<div>patients consultation</div>} />
+                    <Route path={ROUTES.CONSULTATION_NEW} element={<RecordingSession />} />
                     <Route path={ROUTES.CONSULTATION_NEW_EXISTING_PATIENT} element={<RecordingSession />} />
                     <Route path={ROUTES.CONSULTATION_DOCUMENT} element={<div>consultation document</div>} />
                     <Route path={ROUTES.CONSULTATION_REVIEW} element={<ReviewConsultation />} />

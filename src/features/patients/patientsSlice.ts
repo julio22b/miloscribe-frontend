@@ -30,8 +30,8 @@ export const createPatient = createAsyncThunk(
     'patients/createPatient',
     async (payload: CreatePatientFormState, thunkApi) => {
         try {
-            const data = (await api.post<{ patient: Patient }>('/patients', payload)).data;
-            return data;
+            const patient = (await api.post<{ patient: Patient }>('/patients', payload)).data.patient;
+            return patient;
         } catch (error) {
             return thunkApi.rejectWithValue(getErrorMessage(error));
         }
@@ -54,7 +54,7 @@ export const patientsSlice = createSlice({
             })
             .addCase(createPatient.fulfilled, (state, action) => {
                 state.loading = false;
-                state.patients = [action.payload.patient, ...state.patients];
+                state.patients = [action.payload, ...state.patients];
             })
             .addMatcher(isAnyOf(fetchPatients.pending, createPatient.pending), (state) => {
                 state.loading = true;

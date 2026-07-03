@@ -1,9 +1,16 @@
 import { ArrowUp, Mic, Pause, Trash } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useLocation, useNavigate } from 'react-router';
-import type { Consultation, Document, DocumentType, Patient, RecordingStatus } from '@/types/types';
+import type {
+    Consultation,
+    CreatePatientFormState,
+    Document,
+    DocumentType,
+    Patient,
+    RecordingStatus,
+} from '@/types/types';
 import { useEffect, useRef, useState } from 'react';
-import { DOCUMENT_TYPES, RECORDING_STATUSES } from '@/app/constants';
+import { DOCUMENT_TYPES, PATIENT_FORM_INITIAL_STATE, RECORDING_STATUSES } from '@/app/constants';
 import { ROUTES } from '@/routes';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { formatTime } from '@/lib/utils';
@@ -16,6 +23,8 @@ import { useAppDispatch } from '@/app/hooks';
 import { toast } from 'sonner';
 import ProcessingRecording from './ProcessingRecording';
 import PatientHeader from '../common/PatientHeader';
+import { createPatient } from '@/features/patients/patientsSlice';
+import PatientForm from '../Patients/PatientForm';
 
 const RecordingSession = () => {
     const [documentType, setDocumentType] = useState<DocumentType>(DOCUMENT_TYPES.MEDICAL_HISTORY.value);
@@ -23,10 +32,11 @@ const RecordingSession = () => {
     const [timer, setTimer] = useState<number>(0);
     const [isConsultationCreated, setIsConsultationCreated] = useState(false);
     const [isConsultationProcessed, setIsConsultationProcessed] = useState(false);
+    const [patientForm, setPatientForm] = useState<CreatePatientFormState>(PATIENT_FORM_INITIAL_STATE);
     const location = useLocation();
     const navigate = useNavigate();
     const { patient, existingConsultation } = (location.state || {}) as {
-        patient: Patient;
+        patient?: Patient;
         existingConsultation?: Consultation;
     };
     // recording and canvas ref
@@ -41,6 +51,7 @@ const RecordingSession = () => {
     //
     const createdConsultationRef = useRef<Consultation | null>(null);
     const createdDocumentRef = useRef<Document | null>(null);
+    const createdPatientRef = useRef<Patient | null>(null);
     const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dispatch = useAppDispatch();
     const isRecording = recordingStatus === RECORDING_STATUSES.recording;
@@ -65,7 +76,6 @@ const RecordingSession = () => {
     const pauseTimer = () => {
         clearInterval(timerRef.current ?? undefined);
     };
-
 
     const startDrawLoop = () => {
         if (!analyserRef.current) return;
@@ -199,7 +209,7 @@ const RecordingSession = () => {
         if (isDone && createdConsultationRef.current !== null && createdDocumentRef.current !== null) {
             navigate(ROUTES.CONSULTATION_REVIEW.replace(':id', String(createdConsultationRef.current.id)), {
                 state: {
-                    patient,
+                    patient: patient || createdPatientRef.current,
                     documentType,
                     consultation: createdConsultationRef.current,
                     document: createdDocumentRef.current,
@@ -209,13 +219,25 @@ const RecordingSession = () => {
     }, [isDone, navigate]);
 
     const dispatchConsultation = async (blob: Blob, existingConsultationId?: number) => {
-        if (!patient) return;
-
         setIsConsultationCreated(false);
         setIsConsultationProcessed(false);
 
+        let patientId: string | undefined = patient?.id?.toString();
+
+        if (!patientId) {
+            try {
+                const newPatient = await dispatch(createPatient(patientForm)).unwrap();
+                patientId = newPatient.id.toString();
+                createdPatientRef.current = newPatient;
+            } catch {
+                toast.error('Error creating patient');
+                discardRecording();
+                return;
+            }
+        }
+
         const formData = new FormData();
-        formData.append('patientId', patient.id.toString());
+        formData.append('patientId', patientId);
         formData.append('audioFile', blob, 'consultation.webm');
         try {
             let consultationId: number;
@@ -241,20 +263,22 @@ const RecordingSession = () => {
         } catch (error) {
             // add error handling, the loader should show which step failed
             setRecordingStatus(RECORDING_STATUSES.idle);
+            audioChunksRef.current = [];
             console.log('error', error);
         }
     };
 
     const onSubmit = () => {
-        if (!patient) {
-            toast.error('Patient not found');
+        if (!patient && (!patientForm.name || !patientForm.date_of_birth)) {
+            toast.error('Patient name and date of birth are required');
             return;
         }
         stopRecording();
     };
 
     const discardRecording = () => {
-        pauseRecording();
+        pauseTimer();
+        cancelAnimationFrame(animationFrameRef.current!);
         audioBlobRef.current = null;
         audioChunksRef.current = [];
         mediaRecorderRef.current?.stream?.getTracks().forEach((t) => t.stop());
@@ -269,6 +293,7 @@ const RecordingSession = () => {
     return (
         <section className='flex flex-col p-4 gap-4'>
             {patient && <PatientHeader patient={patient} />}
+            {!patient && <PatientForm value={patientForm} onChange={setPatientForm} isInlineForm />}
             <ToggleGroup
                 onValueChange={(value: DocumentType) => setDocumentType(value || documentType)}
                 value={documentType}
@@ -342,6 +367,10 @@ const RecordingSession = () => {
                             onClick={() => {
                                 if (isRecording) return pauseRecording();
                                 if (isPaused) return resumeRecording();
+                                if (!patient && (!patientForm.name || !patientForm.date_of_birth)) {
+                                    toast.error('Enter patient name and date of birth first');
+                                    return;
+                                }
                                 return requestMicPermission();
                             }}
                         >

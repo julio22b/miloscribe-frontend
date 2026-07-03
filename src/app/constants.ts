@@ -19,3 +19,9 @@ export const RECORDING_STATUSES = {
     processing: 'processing',
     done: 'done',
 } as const;
+
+export const PATIENT_FORM_INITIAL_STATE = {
+    name: '',
+    date_of_birth: '',
+    gender: 'MALE',
+} as const;
