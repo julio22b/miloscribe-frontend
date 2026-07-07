@@ -2,11 +2,12 @@ import { getAgeFromDOB, getLastVisitDate } from '@/lib/utils';
 import GoBackBtn from '../common/GoBackBtn';
 import { useLocation, useNavigate } from 'react-router';
 import { Button } from '../ui/button';
-import { Edit2 } from 'lucide-react';
+import { Edit2, Mic } from 'lucide-react';
 import PatientInitials from '../common/PatientInitials';
 import type { Patient } from '@/types/types';
 import ConsultationCard from './ConsultationCard';
 import { ROUTES } from '@/routes';
+import { toast } from 'sonner';
 
 const PatientDetails = () => {
     const location = useLocation();
@@ -29,7 +30,7 @@ const PatientDetails = () => {
                     variant='outline'
                     size='icon'
                     className='rounded-full'
-                    onClick={() => console.log('navigate to edit patient')}
+                    onClick={() => toast.info('Coming soon')}
                 >
                     <Edit2 className='size-4' />
                 </Button>
@@ -81,6 +82,7 @@ const PatientDetails = () => {
                     })
                 }
             >
+                <Mic />
                 Record visit
             </Button>
         </section>
