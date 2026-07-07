@@ -7,7 +7,8 @@ import { useNavigate } from 'react-router';
 import { logIn } from '@/features/auth/authSlice';
 import { Spinner } from '../ui/spinner';
 import { ROUTES } from '@/routes';
-import { ArrowRight, Eye, EyeOff, Mic } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import logo from '../../assets/milo.png';
 
 const LogIn = () => {
     const [formState, setFormState] = useState({
@@ -32,10 +33,8 @@ const LogIn = () => {
     return (
         <div className='h-screen flex flex-col justify-center'>
             <div className='text-center my-12 flex flex-col items-center'>
-                <div className='rounded-2xl bg-primary p-4 mb-4 flex items-center justify-center shadow-md shadow-gray-400'>
-                    <Mic className='text-2xl font-bold text-white' />
-                </div>
-                <h1 className='text-2xl font-bold'>MediScribe</h1>
+                <img src={logo} alt='MiloScribe logo' className='size-24 mb-4 rounded-full object-cover' />
+                <h1 className='text-2xl font-bold'>MiloScribe</h1>
                 <p className='text-muted-foreground text-sm'>Clinical AI Assistant</p>
             </div>
             <form onSubmit={handleSubmit} className='p-4 flex flex-col justify-center items-center'>
