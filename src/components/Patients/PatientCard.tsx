@@ -13,7 +13,7 @@ interface PatientCardProps {
 const PatientCard = ({ patient }: PatientCardProps) => {
     return (
         <Card className='shadow-md'>
-            <Link to={ROUTES.PATIENT_DETAILS.replace(':id', String(patient.id))} state={{ patient }}>
+            <Link to={ROUTES.PATIENT_DETAILS.replace(':id', String(patient.id))}>
                 <CardContent className='flex items-center gap-4'>
                     <PatientInitials patient={patient} />
                     <div>

@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { Field, FieldGroup, FieldLabel } from '../ui/field';
 import { Input } from '../ui/input';
-import type { CreatePatientFormState } from '@/types/types';
-import { getAgeFromDOB, getDOBFromAge } from '@/lib/utils';
+import type { CreatePatientFormState, Patient } from '@/types/types';
+import { getAgeFromDOB, getDOBFromAge, toDateInputValue } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { createPatient } from '@/features/patients/patientsSlice';
-import { useNavigate } from 'react-router';
+import { createPatient, updatePatient } from '@/features/patients/patientsSlice';
+import { useLocation, useNavigate } from 'react-router';
 import FullPageLoader from '../common/FullPageLoader';
 import { toast } from 'sonner';
 import GoBackBtn from '../common/GoBackBtn';
@@ -21,11 +21,24 @@ interface PatientFormProps {
 }
 
 const PatientForm = ({ value, onChange, isInlineForm }: PatientFormProps) => {
+    const location = useLocation();
+    const { patientToEdit } = (location.state || {}) as {
+        patientToEdit?: Patient;
+    };
+    // mutually exclusive between inline and edit forms
+    const isEditForm = Boolean(patientToEdit);
     const { loading, error } = useAppSelector((state) => state.patients);
-    const [internalState, setInternalState] = useState<CreatePatientFormState>(PATIENT_FORM_INITIAL_STATE);
+    const [internalState, setInternalState] = useState<CreatePatientFormState>({
+        ...PATIENT_FORM_INITIAL_STATE,
+        ...(patientToEdit && {
+            name: patientToEdit.name,
+            gender: patientToEdit.gender,
+            date_of_birth: toDateInputValue(patientToEdit.date_of_birth),
+        }),
+    });
     const formState = value ?? internalState;
     const setFormState = isInlineForm ? onChange! : setInternalState;
-    const [age, setAge] = useState<string>('');
+    const [age, setAge] = useState<string>(patientToEdit ? getAgeFromDOB(patientToEdit.date_of_birth).toString() : '');
     const [errors, setErrors] = useState<string[]>([]);
     const nameRef = useRef<HTMLInputElement>(null);
     const dispatch = useAppDispatch();
@@ -40,11 +53,23 @@ const PatientForm = ({ value, onChange, isInlineForm }: PatientFormProps) => {
         }
 
         try {
-            await dispatch(createPatient(formState)).unwrap();
-            toast.success('Patient successfully created');
+            if (isEditForm) {
+                const payload = {
+                    id: patientToEdit!.id,
+                    name: formState.name,
+                    date_of_birth: formState.date_of_birth,
+                    gender: formState.gender,
+                };
+                await dispatch(updatePatient(payload)).unwrap();
+                toast.success('Patient successfully updated');
+            } else {
+                await dispatch(createPatient(formState)).unwrap();
+                toast.success('Patient successfully created');
+            }
             navigate(-1);
         } catch {
-            toast.error('Error creating patient. Please try again');
+            const message = isEditForm ? 'Error updating patient' : 'Error creating patient';
+            toast.error(message + '. Please try again');
         }
     };
 
@@ -61,10 +86,12 @@ const PatientForm = ({ value, onChange, isInlineForm }: PatientFormProps) => {
                     <div>
                         {!isInlineForm ? (
                             <>
-                                <h1 className='text-xl font-bold'>Add new patient</h1>
-                                <p className='text-sm text-muted-foreground'>
-                                    They'll appear in your recent appointments.
-                                </p>
+                                <h1 className='text-xl font-bold'>{isEditForm ? 'Edit patient' : 'Add new patient'}</h1>
+                                {!isEditForm && (
+                                    <p className='text-sm text-muted-foreground'>
+                                        They'll appear in your recent appointments.
+                                    </p>
+                                )}
                             </>
                         ) : (
                             <>
@@ -145,9 +172,9 @@ const PatientForm = ({ value, onChange, isInlineForm }: PatientFormProps) => {
                     <div className='flex flex-col mt-auto gap-4 bg-white py-8 border-t border-gray-200 px-4 -mx-4 -mb-4'>
                         <Button type='submit' onClick={handleSubmit} className='py-6'>
                             <UserPlus className='mr-2 text-2xl' />
-                            Add patient
+                            {isEditForm ? 'Update' : 'Add'} patient
                         </Button>
-                        <Button variant='outline' onClick={handleCancel} className='py-6'>
+                        <Button type='button' variant='outline' onClick={handleCancel} className='py-6'>
                             Cancel
                         </Button>
                     </div>

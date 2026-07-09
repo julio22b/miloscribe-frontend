@@ -10,7 +10,7 @@ MiloScribe records a consultation, transcribes it, and generates a formatted cli
 
 ## Why this project exists
 
-Physicians spend a large share of their day writing documentation instead of seeing patients. A surgeon I worked with described dictating the same structured notes repeatedly by hand. MiloScribe lets him speak naturally during or after a visit and get a properly formatted clinical document back — one that follows the conventions his hospital actually uses, not a generic template.
+Physicians spend a large share of their day writing documentation instead of seeing patients. A surgeon I worked with described dictating the same structured notes repeatedly by hand. MiloScribe lets him speak naturally during or after a visit and get a properly formatted clinical document back — one that follows the conventions his hospital actually uses, not a generic template. It generates Spanish by design because it was built for a Venezuelan surgeon.
 
 ---
 

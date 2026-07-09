@@ -14,8 +14,13 @@ export function getErrorMessage(error: unknown) {
     return message;
 }
 
+export function parseDateOnly(date: string): Date {
+    const [year, month, day] = date.slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
 export function getAgeFromDOB(dateOfBirth: string): number {
-    const birthDate = new Date(dateOfBirth);
+    const birthDate = parseDateOnly(dateOfBirth);
     const today = new Date();
 
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -30,6 +35,10 @@ export function getAgeFromDOB(dateOfBirth: string): number {
 
 export function getDOBFromAge(age: number): string {
     return `${new Date().getFullYear() - age}-01-01`;
+}
+
+export function toDateInputValue(date: string | undefined | null): string {
+    return date ? date.slice(0, 10) : '';
 }
 
 export const getAvatarColor = (id: number) => {

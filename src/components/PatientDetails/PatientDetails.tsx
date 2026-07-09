@@ -1,39 +1,101 @@
-import { getAgeFromDOB, getLastVisitDate } from '@/lib/utils';
+import { getAgeFromDOB, getLastVisitDate, parseDateOnly } from '@/lib/utils';
 import GoBackBtn from '../common/GoBackBtn';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { Button } from '../ui/button';
-import { Edit2, Mic } from 'lucide-react';
+import { Edit2, Mic, Trash } from 'lucide-react';
 import PatientInitials from '../common/PatientInitials';
-import type { Patient } from '@/types/types';
 import ConsultationCard from './ConsultationCard';
 import { ROUTES } from '@/routes';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { deletePatient, fetchPatient, setPatientDetails } from '@/features/patients/patientsSlice';
+import { useEffect } from 'react';
+import FullPageLoader from '../common/FullPageLoader';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '../ui/dialog';
 import { toast } from 'sonner';
 
 const PatientDetails = () => {
-    const location = useLocation();
+    const { patientDetails: patient, loading, error } = useAppSelector((state) => state.patients);
     const navigate = useNavigate();
-    const patient = location.state.patient as Patient;
+    const dispatch = useAppDispatch();
+    const params = useParams();
+
+    useEffect(() => {
+        if (!params.id) return;
+
+        dispatch(fetchPatient(Number(params.id)));
+
+        return () => {
+            dispatch(setPatientDetails(null));
+        };
+    }, [dispatch, params.id]);
+
+    if (!patient) {
+        return error ? <p>No patient found</p> : <FullPageLoader />;
+    }
 
     const formattedDOB = new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-    }).format(new Date(patient.date_of_birth));
+    }).format(parseDateOnly(patient.date_of_birth));
 
     const visitCount = patient.consultations.length;
 
+    const handleDelete = async () => {
+        try {
+            await dispatch(deletePatient(patient.id)).unwrap();
+            toast.success('Patient deleted');
+            navigate(-1);
+        } catch {
+            toast.error('Error deleting patient');
+        }
+    };
+
     return (
         <section className='flex flex-col p-4'>
+            {loading && <FullPageLoader />}
             <div className='flex items-center justify-between'>
                 <GoBackBtn />
-                <Button
-                    variant='outline'
-                    size='icon'
-                    className='rounded-full'
-                    onClick={() => toast.info('Coming soon')}
-                >
-                    <Edit2 className='size-4' />
-                </Button>
+                <div>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant='outline' size='icon' className='rounded-full mr-2'>
+                                <Trash />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Delete patient</DialogTitle>
+                                <DialogDescription>This patient will be removed from your list.</DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button variant='destructive' className='rounded-full' onClick={handleDelete}>
+                                    Delete
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                    <Button
+                        variant='outline'
+                        size='icon'
+                        className='rounded-full'
+                        onClick={() =>
+                            navigate(ROUTES.PATIENTS_EDIT.replace(':id', String(patient.id)), {
+                                state: { patientToEdit: patient },
+                            })
+                        }
+                    >
+                        <Edit2 />
+                    </Button>
+                </div>
             </div>
 
             <div className='flex flex-col items-center gap-3 text-center mb-4'>

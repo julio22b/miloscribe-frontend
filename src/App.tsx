@@ -33,6 +33,7 @@ function App() {
                     <Route path={ROUTES.PATIENTS} element={<Patients />} />
                     <Route path={ROUTES.PATIENT_DETAILS} element={<PatientDetails />} />
                     <Route path={ROUTES.PATIENTS_NEW} element={<PatientForm />} />
+                    <Route path={ROUTES.PATIENTS_EDIT} element={<PatientForm />} />
                     <Route path={ROUTES.CONSULTATION_NEW} element={<RecordingSession />} />
                     <Route path={ROUTES.CONSULTATION_NEW_EXISTING_PATIENT} element={<RecordingSession />} />
                     <Route path={ROUTES.CONSULTATION_DOCUMENT} element={<div>consultation document</div>} />

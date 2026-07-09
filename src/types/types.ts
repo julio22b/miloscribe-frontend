@@ -12,6 +12,8 @@ export interface Patient {
 
 export type CreatePatientFormState = Pick<Patient, 'name' | 'date_of_birth' | 'gender'>;
 
+export type UpdatePatientFormState = CreatePatientFormState & Pick<Patient, 'id'>;
+
 interface Doctor {
     id: number;
     name: string;
