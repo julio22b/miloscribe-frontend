@@ -34,7 +34,7 @@ export type DocumentType = 'MEDICAL_HISTORY' | 'PROGRESS_NOTE' | 'DISCHARGE_SUMM
 export interface Document {
     id: number;
     consultation_id: number;
-    consultation: Consultation;
+    consultation?: Consultation;
     type: DocumentType;
     content: string;
     created_at: string;
@@ -44,7 +44,7 @@ export interface Document {
 export interface Consultation {
     id: number;
     patient_id: number;
-    patient: Patient;
+    patient?: Patient;
     audio_url?: string;
     transcript_text?: string;
     status: ConsultationStatuses;

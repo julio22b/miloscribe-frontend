@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from 'react-router';
 import type { Consultation, Document, DocumentType, Patient } from '@/types/types';
 import PatientHeader from '../common/PatientHeader';
-import { DOCUMENT_TYPES } from '@/app/constants';
+import NotFound from '../common/NotFound';
+import DocumentTypeChip from '../common/DocumentTypeChip';
 import { Textarea } from '../ui/textarea';
 import { useState } from 'react';
 import { Button } from '../ui/button';
@@ -49,16 +50,16 @@ const ReviewConsultation = () => {
         }
     };
 
-    if (!document) return <p>error</p>;
+    if (!document) return <NotFound message='No document found' />;
 
     return (
         <section className='flex flex-col p-4 gap-6'>
             {loading && <FullPageLoader message={loadingMessage} />}
             <PatientHeader patient={patient} />
             <div className='w-full border border-gray-200 rounded-lg p-4 text-sm bg-white overflow-auto'>
-                <p className='font-bold m-2 border-b border-gray-100 pb-2'>
-                    {DOCUMENT_TYPES[documentType]?.label || ''}
-                </p>
+                <div className='m-2 border-b border-gray-100 pb-2'>
+                    <DocumentTypeChip type={documentType} />
+                </div>
                 <Textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}

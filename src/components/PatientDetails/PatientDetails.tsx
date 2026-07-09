@@ -1,5 +1,6 @@
 import { getAgeFromDOB, getLastVisitDate, parseDateOnly } from '@/lib/utils';
 import GoBackBtn from '../common/GoBackBtn';
+import NotFound from '../common/NotFound';
 import { useNavigate, useParams } from 'react-router';
 import { Button } from '../ui/button';
 import { Edit2, Mic, Trash } from 'lucide-react';
@@ -38,7 +39,7 @@ const PatientDetails = () => {
     }, [dispatch, params.id]);
 
     if (!patient) {
-        return error ? <p>No patient found</p> : <FullPageLoader />;
+        return error ? <NotFound message='No patient found' /> : <FullPageLoader />;
     }
 
     const formattedDOB = new Intl.DateTimeFormat('en-US', {
@@ -77,7 +78,12 @@ const PatientDetails = () => {
                                 <DialogDescription>This patient will be removed from your list.</DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
-                                <Button variant='destructive' className='rounded-full' onClick={handleDelete}>
+                                <Button
+                                    variant='destructive'
+                                    className='rounded-full'
+                                    onClick={handleDelete}
+                                    disabled={loading}
+                                >
                                     Delete
                                 </Button>
                             </DialogFooter>
@@ -132,7 +138,7 @@ const PatientDetails = () => {
                     </p>
                 ) : (
                     patient.consultations.map((consultation) => (
-                        <ConsultationCard key={consultation.id} consultation={consultation} />
+                        <ConsultationCard key={consultation.id} consultation={consultation} patient={patient} />
                     ))
                 )}
             </div>

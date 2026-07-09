@@ -13,6 +13,7 @@ import FullPageLoader from './components/common/FullPageLoader';
 import { useEffect, useState } from 'react';
 import { subscribeServerWakeup } from './lib/serverWakeup';
 import PatientDetails from './components/PatientDetails/PatientDetails';
+import Document from './components/Document/Document';
 
 function App() {
     const { auth } = useAppState();
@@ -40,7 +41,7 @@ function App() {
                         <Route path={ROUTES.PATIENTS_EDIT} element={<PatientForm />} />
                         <Route path={ROUTES.CONSULTATION_NEW} element={<RecordingSession />} />
                         <Route path={ROUTES.CONSULTATION_NEW_EXISTING_PATIENT} element={<RecordingSession />} />
-                        <Route path={ROUTES.CONSULTATION_DOCUMENT} element={<div>consultation document</div>} />
+                        <Route path={ROUTES.CONSULTATION_DOCUMENT} element={<Document />} />
                         <Route path={ROUTES.CONSULTATION_REVIEW} element={<ReviewConsultation />} />
                     </Route>
                 </Routes>
