@@ -88,24 +88,22 @@ export const formatTime = (seconds: number) => {
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const AUDIO_MIME_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
-
-const AUDIO_MIME_EXTENSIONS: Record<string, string> = {
-    'audio/webm': 'webm',
-    'audio/mp4': 'mp4',
-    'audio/ogg': 'ogg',
-    'audio/mpeg': 'mp3',
-    'audio/wav': 'wav',
-};
+const AUDIO_FORMATS = [
+    { mimeType: 'audio/webm;codecs=opus', extension: 'webm' },
+    { mimeType: 'audio/webm', extension: 'webm' },
+    { mimeType: 'audio/mp4', extension: 'mp4' },
+    { mimeType: 'audio/ogg;codecs=opus', extension: 'ogg' },
+    { mimeType: 'audio/ogg', extension: 'ogg' },
+];
 
 // falls back to the browser default
 export const getSupportedAudioMimeType = (): string => {
     if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return '';
 
-    return AUDIO_MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? '';
+    return AUDIO_FORMATS.find((format) => MediaRecorder.isTypeSupported(format.mimeType))?.mimeType ?? '';
 };
 
 export const getAudioExtension = (mimeType: string): string => {
     const baseType = mimeType.split(';')[0].trim().toLowerCase();
-    return AUDIO_MIME_EXTENSIONS[baseType] ?? 'webm';
+    return AUDIO_FORMATS.find((format) => format.mimeType.split(';')[0] === baseType)?.extension ?? 'webm';
 };

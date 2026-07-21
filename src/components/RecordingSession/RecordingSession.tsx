@@ -48,6 +48,8 @@ const RecordingSession = () => {
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const audioBlobRef = useRef<Blob | null>(null);
+    // prevents multiple microphone permissions requests
+    const isRequestingMicRef = useRef(false);
     //
     const createdConsultationRef = useRef<Consultation | null>(null);
     const createdDocumentRef = useRef<Document | null>(null);
@@ -140,9 +142,14 @@ const RecordingSession = () => {
 
     const startRecording = (stream: MediaStream) => {
         const preferredMimeType = getSupportedAudioMimeType();
-        const recorder = preferredMimeType
-            ? new MediaRecorder(stream, { mimeType: preferredMimeType })
-            : new MediaRecorder(stream);
+        let recorder: MediaRecorder;
+        try {
+            recorder = new MediaRecorder(stream, { mimeType: preferredMimeType });
+        } catch {
+            stream.getTracks().forEach((track) => track.stop());
+            toast.error('This browser cannot record audio in a supported format');
+            return;
+        }
         mediaRecorderRef.current = recorder;
 
         recorder.ondataavailable = (ev) => {
@@ -164,6 +171,8 @@ const RecordingSession = () => {
     };
 
     const requestMicPermission = async () => {
+        if (isRequestingMicRef.current) return;
+        isRequestingMicRef.current = true;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             startRecording(stream);
@@ -179,6 +188,8 @@ const RecordingSession = () => {
             } else {
                 toast.error(`Unknown error: ${error}`);
             }
+        } finally {
+            isRequestingMicRef.current = false;
         }
     };
 
@@ -197,6 +208,7 @@ const RecordingSession = () => {
 
     const stopRecording = () => {
         mediaRecorderRef.current?.stop();
+        mediaRecorderRef.current?.stream?.getTracks().forEach((track) => track.stop());
         pauseTimer();
         setRecordingStatus(RECORDING_STATUSES.processing);
         cancelAnimationFrame(animationFrameRef.current!);
@@ -287,7 +299,13 @@ const RecordingSession = () => {
         cancelAnimationFrame(animationFrameRef.current!);
         audioBlobRef.current = null;
         audioChunksRef.current = [];
-        mediaRecorderRef.current?.stream?.getTracks().forEach((t) => t.stop());
+        const recorder = mediaRecorderRef.current;
+        if (recorder) {
+            // needed so a recording can be discarded while still playing
+            recorder.ondataavailable = null;
+            recorder.onstop = null;
+            recorder.stream?.getTracks().forEach((t) => t.stop());
+        }
         setRecordingStatus(RECORDING_STATUSES.idle);
         setIsConsultationProcessed(false);
         if (doneTimerRef.current !== null) clearTimeout(doneTimerRef.current);
