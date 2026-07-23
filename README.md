@@ -4,7 +4,7 @@
 
 MiloScribe records a consultation, transcribes it, and generates a formatted clinical document: a medical history, progress note, or discharge summary that the physician can review, edit, and save. It was built to solve a real documentation burden for a surgeon in a Venezuelan hospital, and its design decisions were shaped directly by his day-to-day workflow.
 
-> **This is the frontend repository.** The API and AI processing live in the [backend repository](https://github.com/julio22b/health-app-backend).
+> **This is the frontend repository.** The API and AI processing live in the [backend repository](https://github.com/julio22b/miloscribe-backend).
 
 ---
 
@@ -25,6 +25,12 @@ Physicians spend a large share of their day writing documentation instead of see
 ---
 
 ## Screenshots & demo
+
+> 🔊 **Note:** This demo includes an audio explanation of the feature walkthrough.
+<div align="center">
+  <video src="[https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4](https://github.com/user-attachments/assets/997088ee-4f63-4bba-bfbd-5a6184f236e9)" width="100%" preload="metadata" controls loop>
+  </video>
+</div>
 
 <img src="/docs/screenshots/patients-screen.png" alt="patients screen" width="300" />
 <img src="/docs/screenshots/recording.png" alt="recording screen" width="300" />
