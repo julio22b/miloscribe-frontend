@@ -33,10 +33,10 @@ Physicians spend a large share of their day writing documentation instead of see
   </video>
 </div>
 
-<div style="display: flex; gap: 10px; justify-content: center;">
-  <img src="/docs/screenshots/patients-screen.png" alt="patients screen" width="280" height="450px" object-fit="contain" />
-  <img src="/docs/screenshots/recording.png" alt="recording screen" width="280" height="450px" object-fit="contain" />
-  <img src="/docs/screenshots/review.png" alt="review screen" width="280" height="450px" object-fit="contain" />
+<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+  <img src="/docs/screenshots/patients-screen.png" alt="patients screen" style="width: 280px; height: auto; max-height: 600px;" />
+  <img src="/docs/screenshots/recording.png" alt="recording screen" style="width: 280px; height: auto; max-height: 600px;" />
+  <img src="/docs/screenshots/review.png" alt="review screen" style="width: 280px; height: auto; max-height: 600px;" />
 </div>
 
 ---
